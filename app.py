@@ -4,7 +4,7 @@ import base64
 import os
 import urllib.parse
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 import base64 as b64_encode
 from dotenv import load_dotenv
@@ -19,9 +19,6 @@ app.secret_key = os.getenv('SECRET_KEY')
 USERNAME = os.getenv('USERNAME')
 PASSWORD = os.getenv('PASSWORD')
 TEAM_NAME = "ZIKO-TEAM"
-
-# مفاتيح APIs من متغيرات البيئة
-BANCHECK_KEY = os.getenv('BANCHECK_KEY')
 
 def get_api_url(uid, server_name):
     try:
@@ -224,7 +221,7 @@ LOGIN_TEMPLATE = """
 </head>
 <body>
     <div class="login-container">
-        <h1>ZAKARIA</h1>
+        <h1>WELCOME</h1>
         <div class="team-name">{{ team_name }}</div>
         
         {% if error %}
@@ -305,7 +302,7 @@ MAIN_TEMPLATE = """
             width: 100%;
             margin: auto;
             background: rgba(26, 26, 26, 0.95);
-            padding: 60px 20px 20px 20px;  /* مسافة علوية كبيرة */
+            padding: 60px 20px 20px 20px;
             border-radius: 20px;
             border: 2px solid #ff0000;
             box-shadow: 0 0 30px rgba(255,0,0,0.4);
@@ -362,7 +359,7 @@ MAIN_TEMPLATE = """
         h1 {
             color: #ff1a1a;
             font-size: 2.2em;
-            margin-top: 15px;  /* مسافة علوية مناسبة */
+            margin-top: 15px;
             margin-bottom: 2px;
             text-shadow: 0 0 15px #ff0000;
             letter-spacing: 2px;
@@ -602,10 +599,9 @@ MAIN_TEMPLATE = """
             font-size: 0.85em;
         }
         
-        /* تحسينات للشاشات الصغيرة */
         @media (max-width: 480px) {
             .container {
-                padding: 65px 15px 15px 15px;  /* مسافة علوية أكبر للشاشات الصغيرة */
+                padding: 65px 15px 15px 15px;
             }
             
             h1 {
@@ -642,7 +638,6 @@ MAIN_TEMPLATE = """
             }
         }
         
-        /* تحسينات للشاشات المتوسطة */
         @media (min-width: 481px) and (max-width: 768px) {
             .container {
                 padding: 60px 20px 20px 20px;
@@ -655,7 +650,7 @@ MAIN_TEMPLATE = """
         <a href="/logout" class="logout-btn">{% if lang == 'ar' %}⭕ خروج{% else %}⭕ LOGOUT{% endif %}</a>
         <div class="user-badge">{{ username }}</div>
         
-        <h1>⚡ Ziko TOOLS⚡️</h1>
+        <h1>⚡Ziko TOOLS⚡️</h1>
         <div class="team-name">{{ team_name }}</div>
 
         <div class="language-switch">
@@ -902,22 +897,33 @@ def check_ban():
                                        error=error, result=None, username=session.get('username', ''))
 
     try:
-        url = f"https://foubia-ban-check.vercel.app/bancheck?key={BANCHECK_KEY}&uid={uid}"
+        # استخدام API فحص الحظر المطلوب
+        url = f"https://foubia-ban-check.vercel.app/bancheck?key=xTzPrO&uid={uid}"
         response = requests.get(url, timeout=10)
         data = response.json()
 
+        # استخراج البيانات من الرد (بما يتوافق مع الرد الذي أعطيته)
         username = data.get('username', 'Unknown')
-        ban_status = data.get('BanStatus', False)
-        ban_period = data.get('BanDuration', 0)
+        uid_from_api = data.get('uid', uid)
+        status = data.get('status', 'UNKNOWN')
+        ban_period = data.get('ban_period', 0)
+        is_banned = data.get('is_banned', False)
         
+        # تنسيق النتيجة بالشكل المطلوب
         result_lines = []
         result_lines.append(f"✨ Result for UID: {uid}")
         result_lines.append("━━━━━━━━━━━━━━━")
         result_lines.append(f"username: {username}")
-        result_lines.append(f"uid: {uid}")
-        result_lines.append(f"status: {'NOT BANNED' if not ban_status else 'BANNED'}")
+        result_lines.append(f"uid: {uid_from_api}")
+        result_lines.append(f"status: {status}")
         result_lines.append(f"ban_period: {ban_period}")
-        result_lines.append(f"is_banned: {'✅ لا' if not ban_status else '❌ نعم' if lang == 'ar' else '✅ No' if not ban_status else '❌ Yes'}")
+        
+        # عرض is_banned في النهاية
+        if lang == 'ar':
+            result_lines.append(f"is_banned: {'✅ لا' if not is_banned else '❌ نعم'}")
+        else:
+            result_lines.append(f"is_banned: {'✅ No' if not is_banned else '❌ Yes'}")
+            
         result_lines.append("━━━━━━━━━━━━━━━")
         result_lines.append("💎 Powered by: @ZikoB0SS")
 
@@ -1162,7 +1168,10 @@ def get_outfit():
         error = f"❌ خطأ: {str(e)}" if lang == 'ar' else f"❌ Error: {str(e)}"
         return render_template_string(MAIN_TEMPLATE, team_name=TEAM_NAME, regions=regions, lang=lang,
                                        error=error, result=None, username=session.get('username', ''))
+
+# للتشغيل على Vercel
 app = app
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
