@@ -5,6 +5,7 @@ import os
 import urllib.parse
 import json
 import re
+import random
 from functools import wraps
 from datetime import datetime
 from io import BytesIO
@@ -25,8 +26,39 @@ TEAM_NAME = "ZIKO-TEAM"
 # قنوات المطور
 YOUTUBE_URL = "https://youtube.com/@ziko_boss?si=dhuL5-voIabSYdI0"
 TELEGRAM_URL = "https://t.me/Ziko_Tim"
+FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61586247175238"
 DEVELOPER = "@ZikoBOSS"
 
+# ==================== دوال تزخريف الأسماء ====================
+SYMBOLS = [
+    "★","✦","✧","♛","♞","✪","✫","✬","✯","✾","✿","❀","♚",
+    "⚔","⚜","♫","♪","✤","✥","⍟","➤","➣","☽","☄","☇","☉",
+    "☢","☣","☠","☤","☥","☨","☬","☭","☯","⚚","⚝","⚕","⚘","⚛","⚚","𓂀","𓂻","𓋹","𓆩","𓆪","𖤍"
+]
+
+FONTS = [
+    str.maketrans("abcdefghijklmnopqrstuvwxyz", "𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝐣𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝐫𝐬𝐭𝐮𝐯𝐰𝐱𝐲𝐳"),
+    str.maketrans("abcdefghijklmnopqrstuvwxyz", "𝓪𝓫𝓬𝓭𝓮𝓯𝓰𝓱𝓲𝓳𝓴𝓵𝓶𝓷𝓸𝓹𝓺𝓻𝓼𝓽𝓾𝓿𝔀𝔁𝔂𝔃"),
+    str.maketrans("abcdefghijklmnopqrstuvwxyz", "𝙖𝙗𝙘𝙙𝙚𝙛𝙜𝙝𝙞𝙟𝙠𝙡𝙢𝙣𝙤𝙥𝙦𝙧𝙨𝙩𝙪𝙫𝙬𝙭𝙮𝙯"),
+    str.maketrans("abcdefghijklmnopqrstuvwxyz", "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ"),
+    str.maketrans("abcdefghijklmnopqrstuvwxyz", "ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩ"),
+]
+
+def generate_styles(name):
+    """توليد 32 تصميم مختلف للاسم"""
+    output = []
+    name = name.lower()
+    
+    for _ in range(32):
+        font = random.choice(FONTS)
+        left = random.choice(SYMBOLS)
+        right = random.choice(SYMBOLS)
+        styled = name.translate(font)
+        output.append(f"{left} {styled} {right}")
+    
+    return output
+
+# ==================== دوال المساعدة الأساسية ====================
 def get_api_url(uid, server_name):
     try:
         encoded_url = "aHR0cHM6Ly9kdXJhbnRvLWxpa2UtcGVhcmwudmVyY2VsLmFwcC9saWtlP3VpZD17dWlkfSZzZXJ2ZXJfbmFtZT17c2VydmVyX25hbWV9"
@@ -79,23 +111,19 @@ def get_region_info(uid):
         return {"nickname": "Unknown", "region": "Unknown", "error": str(e)}
 
 def extract_guest_data(file_content):
-    """استخراج معلومات حساب الضيف من الملف - يدعم الصيغة التي أعطيتها"""
+    """استخراج معلومات حساب الضيف من الملف"""
     try:
-        # محاولة فك الترميز
         text = file_content.decode('utf-8')
         
-        # محاولة تحليل JSON مباشرة
         try:
             data = json.loads(text)
         except:
-            # إذا فشل، ابحث عن JSON داخل النص
             json_match = re.search(r'\{.*\}', text, re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group())
             else:
                 return {"success": False, "error": "Invalid JSON format"}
         
-        # محاولة استخراج البيانات من الهيكل المتوقع
         if "guest_account_info" in data:
             guest_info = data["guest_account_info"]
             uid = guest_info.get("com.garena.msdk.guest_uid")
@@ -108,7 +136,6 @@ def extract_guest_data(file_content):
                     "password": str(password).strip()
                 }
         
-        # إذا لم نجد في guest_account_info، ابحث في المستوى الأعلى
         uid = data.get("com.garena.msdk.guest_uid") or data.get("uid")
         password = data.get("com.garena.msdk.guest_password") or data.get("password")
         
@@ -124,6 +151,7 @@ def extract_guest_data(file_content):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+# ==================== قوالب HTML ====================
 LOGIN_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -551,42 +579,98 @@ MAIN_TEMPLATE = """
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 59, 59, 0.2);
             border-radius: 12px;
-            padding: 15px;
-            margin: 15px 0;
+            padding: 12px;
+            margin: 12px 0;
         }
         
         .credential-label {
             color: #ff9b9b;
-            font-size: 0.85rem;
-            margin-bottom: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            text-align: left;
         }
         
         .credential-value {
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            word-break: break-all;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 8px;
         }
         
         .copy-btn {
             background: transparent;
             border: 1px solid #ff3b3b;
             color: #ff3b3b;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
             transition: all 0.3s ease;
         }
         
         .copy-btn:hover {
             background: #ff3b3b;
             color: black;
+        }
+        
+        .copy-btn i {
+            font-size: 0.6rem;
+        }
+        
+        /* تحسين خاص لأزرار النسخ في قسم الزخرفات */
+        .style-item {
+            background: rgba(0,0,0,0.3);
+            margin: 6px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .style-item:hover {
+            background: rgba(255, 59, 59, 0.1);
+        }
+        
+        .style-text {
+            color: #ff9b9b;
+            font-size: 1rem;
+            flex: 1;
+            font-family: monospace;
+        }
+        
+        .style-copy-btn {
+            background: transparent;
+            border: none;
+            color: #ff3b3b;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+        
+        .style-item:hover .style-copy-btn {
+            opacity: 1;
+        }
+        
+        .style-copy-btn:hover {
+            background: #ff3b3b;
+            color: black;
+            opacity: 1;
+        }
+        
+        .style-copy-btn i {
+            font-size: 0.6rem;
         }
         
         .error-message {
@@ -690,6 +774,7 @@ MAIN_TEMPLATE = """
             <button class="tab-btn" onclick="showTab('info')"><i class="fas fa-info-circle"></i> PLAYER INFO</button>
             <button class="tab-btn" onclick="showTab('outfit')"><i class="fas fa-tshirt"></i> OUTFIT</button>
             <button class="tab-btn" onclick="showTab('guest')"><i class="fas fa-file-import"></i> GUEST FILE</button>
+            <button class="tab-btn" onclick="showTab('nick')"><i class="fas fa-pen-fancy"></i> NICK STYLER</button>
         </div>
 
         {% if error %}
@@ -800,6 +885,21 @@ MAIN_TEMPLATE = """
             </div>
         </div>
 
+        <!-- Tab: Nick Styler -->
+        <div id="nick-tab" class="tab-content">
+            <form onsubmit="handleFormSubmit(event, 'style_nick')">
+                <div class="form-group">
+                    <label><i class="fas fa-font"></i> NAME</label>
+                    <input type="text" name="name" class="form-control" placeholder="Enter your name" required>
+                    <small style="color: #ff9b9b; display: block; margin-top: 5px;">Generate 32 unique stylish designs</small>
+                </div>
+                
+                <button type="submit" class="btn">
+                    <i class="fas fa-magic"></i> GENERATE STYLES
+                </button>
+            </form>
+        </div>
+
         <div id="result-container"></div>
 
         <div class="social-links">
@@ -808,6 +908,9 @@ MAIN_TEMPLATE = """
             </a>
             <a href="{{ telegram_url }}" target="_blank" class="social-link" title="Telegram">
                 <i class="fab fa-telegram"></i>
+            </a>
+            <a href="{{ facebook_url }}" target="_blank" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
             </a>
         </div>
 
@@ -908,11 +1011,21 @@ MAIN_TEMPLATE = """
             }
         `;
         document.head.appendChild(style);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+        if (activeTab) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(activeTab + '-tab').classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${activeTab}')"]`).classList.add('active');
+        }
     </script>
 </body>
 </html>
 """
 
+# ==================== Routes ====================
 @app.route('/', methods=['GET'])
 def home():
     if 'logged_in' in session:
@@ -949,7 +1062,8 @@ def index():
                                  username=session.get('username', ''),
                                  developer=DEVELOPER,
                                  youtube_url=YOUTUBE_URL,
-                                 telegram_url=TELEGRAM_URL)
+                                 telegram_url=TELEGRAM_URL,
+                                 facebook_url=FACEBOOK_URL)
 
 @app.route('/send_likes', methods=['POST'])
 @login_required
@@ -1273,7 +1387,7 @@ def extract_guest():
     <div class="credential-item">
         <div class="credential-label">📌 UID</div>
         <div class="credential-value">
-            <code>{result['uid']}</code>
+            <code style="color: white; font-size: 1rem; word-break: break-all; flex: 1;">{result['uid']}</code>
             <button onclick="copyToClipboard('{result['uid']}')" class="copy-btn">
                 <i class="fas fa-copy"></i> Copy
             </button>
@@ -1283,7 +1397,7 @@ def extract_guest():
     <div class="credential-item">
         <div class="credential-label">🔑 Password</div>
         <div class="credential-value">
-            <code>{result['password']}</code>
+            <code style="color: white; font-size: 1rem; word-break: break-all; flex: 1;">{result['password']}</code>
             <button onclick="copyToClipboard('{result['password']}')" class="copy-btn">
                 <i class="fas fa-copy"></i> Copy
             </button>
@@ -1298,6 +1412,38 @@ def extract_guest():
             return jsonify({"success": True, "result": result_html})
         else:
             return jsonify({"success": False, "error": result.get('error', 'Extraction failed')})
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/style_nick', methods=['POST'])
+@login_required
+def style_nick():
+    name = request.form.get('name', '').strip()
+    
+    if not name:
+        return jsonify({"success": False, "error": "Please enter a name"})
+    
+    try:
+        styles = generate_styles(name)
+        
+        result_html = '<div style="font-family: monospace;">'
+        result_html += '<h4 style="color: #ff3b3b; text-align: center; margin-bottom: 20px;">✨ Your Stylish Name Designs ✨</h4>'
+        
+        for i, style in enumerate(styles, 1):
+            result_html += f'''
+            <div class="style-item">
+                <span class="style-text">{style}</span>
+                <button onclick="copyToClipboard(\'{style}\')" class="style-copy-btn">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            '''
+        
+        result_html += '<div style="margin-top: 15px; color: #888; font-size: 0.85rem; text-align: center;">💎 ZIKO-TEAM · @ZikoBOSS</div>'
+        result_html += '</div>'
+        
+        return jsonify({"success": True, "result": result_html})
         
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
