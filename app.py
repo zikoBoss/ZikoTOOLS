@@ -7,10 +7,11 @@ import json
 import re
 import random
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 import base64 as b64_encode
 from dotenv import load_dotenv
+import jwt
 
 # تحميل المتغيرات من ملف .env
 load_dotenv()
@@ -28,6 +29,9 @@ YOUTUBE_URL = "https://youtube.com/@ziko_boss?si=dhuL5-voIabSYdI0"
 TELEGRAM_URL = "https://t.me/Ziko_Tim"
 FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61586247175238"
 DEVELOPER = "@ZikoBOSS"
+
+# المفتاح السري للـ JWT (نفسه في الموقع المتقدم)
+JWT_SECRET = os.getenv('JWT_SECRET', 'ziko_advanced_secret_key_2026')
 
 # ==================== دوال تزخريف الأسماء ====================
 SYMBOLS = [
@@ -416,6 +420,34 @@ MAIN_TEMPLATE = """
             box-shadow: 0 0 15px red;
         }
         
+        .advanced-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #0099ff, #0066cc);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .advanced-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 153, 255, 0.4);
+        }
+        
+        .advanced-btn i {
+            font-size: 1rem;
+        }
+        
         .tabs {
             display: flex;
             gap: 8px;
@@ -621,7 +653,6 @@ MAIN_TEMPLATE = """
             font-size: 0.6rem;
         }
         
-        /* تحسين خاص لأزرار النسخ في قسم الزخرفات */
         .style-item {
             background: rgba(0,0,0,0.3);
             margin: 6px 0;
@@ -732,7 +763,7 @@ MAIN_TEMPLATE = """
         
         @media (max-width: 480px) {
             .container {
-                padding: 70px 15px 30px;
+                padding: 90px 15px 30px;
             }
             
             .header h1 {
@@ -742,6 +773,20 @@ MAIN_TEMPLATE = """
             .tab-btn {
                 padding: 8px 16px;
                 font-size: 0.85rem;
+            }
+            
+            .advanced-btn {
+                top: 15px;
+                left: 15px;
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+            
+            .logout-btn {
+                top: 15px;
+                right: 15px;
+                padding: 6px 12px;
+                font-size: 0.75rem;
             }
             
             .credential-value {
@@ -759,6 +804,9 @@ MAIN_TEMPLATE = """
 <body>
     <div class="container">
         <a href="/logout" class="logout-btn">LOGOUT</a>
+        <a href="/advanced-tools" class="advanced-btn">
+            <i class="fas fa-crown"></i> ADVANCED TOOLS
+        </a>
         
         <div class="header">
             <h1>⚡Ziko TOOLS⚡️</h1>
@@ -1064,6 +1112,33 @@ def index():
                                  youtube_url=YOUTUBE_URL,
                                  telegram_url=TELEGRAM_URL,
                                  facebook_url=FACEBOOK_URL)
+
+@app.route('/advanced-tools')
+@login_required
+def go_to_advanced():
+    """توجيه المستخدم إلى الموقع المتقدم مع توكن JWT"""
+    try:
+        # إنشاء توكن صالح لمدة 10 دقائق
+        token = jwt.encode({
+            'user_id': session.get('username'),
+            'exp': datetime.utcnow() + timedelta(minutes=10),
+            'source': 'ziko-main'
+        }, JWT_SECRET, algorithm='HS256')
+        
+        # توجيه المستخدم للموقع المتقدم (غير الرابط حسب موقعك)
+        advanced_url = f"https://ziko-tools-rs7b.vercel.app?token={token}"
+        return redirect(advanced_url)
+        
+    except Exception as e:
+        return render_template_string(MAIN_TEMPLATE, 
+                                     team_name=TEAM_NAME, 
+                                     regions=regions,
+                                     username=session.get('username', ''),
+                                     developer=DEVELOPER,
+                                     youtube_url=YOUTUBE_URL,
+                                     telegram_url=TELEGRAM_URL,
+                                     facebook_url=FACEBOOK_URL,
+                                     error=f"Error accessing advanced tools: {str(e)}")
 
 @app.route('/send_likes', methods=['POST'])
 @login_required
